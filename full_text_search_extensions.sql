@@ -146,3 +146,77 @@ FROM film AS f
 /*In this exercise, you will build a query step-by-step that can be used to produce a report to determine which film title is currently held by which customer using the inventory_held_by_customer() function.
 inventory_id is currently held by a customer and alias the column as held_by_cust*/
 
+SELECT 
+	f.title, 
+    i.inventory_id,
+    inventory_held_by_customer(i.inventory_id) AS held_by_cust 
+FROM film as f 
+	INNER JOIN inventory AS i ON f.film_id=i.film_id 
+
+/*Now filter your query to only return records where the inventory_held_by_customer() function returns a non-null value.*/
+
+SELECT 
+	f.title, 
+    i.inventory_id,
+    inventory_held_by_customer(i.inventory_id) as held_by_cust
+FROM film as f 
+	INNER JOIN inventory AS i ON f.film_id=i.film_id 
+WHERE inventory_held_by_customer(i.inventory_id) IS NOT NULL
+
+/* In this exercise you will enable the pg_trgm extension and confirm that the fuzzystrmatch extension, which was enabled in the video, is still enabled by querying the pg_extension system table.*/
+
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+
+/*Now confirm that both fuzzystrmatch and pg_trgm are enabled by selecting all rows from the appropriate system table.*/
+
+SELECT *
+FROM pg_extension;
+
+/*Now that you have enabled the fuzzystrmatch and pg_trgm extensions you can begin to explore their capabilities. First, we will measure the similarity between the title and description from the film table of the Sakila database.
+Select the film title and description.
+Calculate the similarity between the title and description.*/
+
+SELECT 
+  title, 
+  description, 
+  similarity(title, description)
+FROM film
+
+/*In this exercise, we will perform a query against the film table using a search string with a misspelling and use the results from levenshtein to determine a match. Let's check it out.
+Select the film title and film description.
+Calculate the levenshtein distance for the film title with the string JET NEIGHBOR.*/
+
+SELECT  
+  title, 
+  description, 
+  levenshtein(title, 'JET NEIGHBOR') AS distance
+FROM 
+  film
+ORDER BY 3
+
+/*In this exercise, we are going to use many of the techniques and concepts we learned throughout the course to generate a data set that we could use to predict whether the words and phrases used to describe a film have an impact on the number of rentals.
+Select the title and description for all DVDs from the film table.
+Perform a full-text search by converting the description to a tsvector and match it to the phrase 'Astounding & Drama' using a tsquery in the WHERE clause.*/
+
+SELECT  
+  title, 
+  description 
+FROM 
+  film
+WHERE 
+  to_tsvector(description) @@
+  to_tsquery('Astounding & Drama');
+
+/*Add a new column that calculates the similarity of the description with the phrase 'Astounding Drama'.
+Sort the results by the new similarity column in descending order.*/
+
+SELECT 
+  title, 
+  description, 
+  similarity(description, 'Astounding & Drama')
+FROM film 
+WHERE 
+	to_tsvector(description) 
+	@@ to_tsquery('Astounding & Drama') 
+ORDER BY similarity(title, description) DESC;
+
